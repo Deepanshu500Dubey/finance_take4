@@ -27,4 +27,6 @@ pytest==7.4.3
 pytest-asyncio==0.23.3
 
 # Documentation
+
 python-markdown
+gunicorn
