@@ -1,0 +1,30 @@
+# FastAPI and Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Data Validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# CORS and Middleware
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Data Processing
+pandas==2.1.4
+numpy==1.26.3
+
+# Date/Time
+python-dateutil==2.8.2
+
+# HTTP Client (for testing)
+httpx==0.26.0
+requests==2.31.0
+
+# Development and Testing
+pytest==7.4.3
+pytest-asyncio==0.23.3
+
+# Documentation
+python-markdown

@@ -1,0 +1,16 @@
+Cost_Center_Code,Cost_Center_Name,State,Region,Active,Manager,Budget_Holder
+NSW,New South Wales Operations,NSW,Eastern Australia,Y,Sarah Chen,sarah.chen@company.com.au
+VIC,Victoria Operations,VIC,Southern Australia,Y,Michael Wong,michael.wong@company.com.au
+QLD,Queensland Operations,QLD,Northern Australia,Y,Emma Thompson,emma.thompson@company.com.au
+WA,Western Australia Operations,WA,Western Australia,Y,David Miller,david.miller@company.com.au
+SA,South Australia Operations,SA,Southern Australia,Y,Lisa Anderson,lisa.anderson@company.com.au
+TAS,Tasmania Operations,TAS,Southern Australia,Y,James Wilson,james.wilson@company.com.au
+NT,Northern Territory Operations,NT,Northern Australia,Y,Rachel Green,rachel.green@company.com.au
+ACT,Australian Capital Territory,ACT,Eastern Australia,Y,Tom Harris,tom.harris@company.com.au
+CORP,Corporate Head Office,NSW,Eastern Australia,Y,Jennifer Lee,jennifer.lee@company.com.au
+IT,Information Technology,NSW,Eastern Australia,Y,Robert Kumar,robert.kumar@company.com.au
+FIN,Finance & Accounting,VIC,Southern Australia,Y,Patricia Brown,patricia.brown@company.com.au
+HR,Human Resources,NSW,Eastern Australia,Y,Andrew Davis,andrew.davis@company.com.au
+MKT,Marketing & Sales,NSW,Eastern Australia,Y,Michelle Taylor,michelle.taylor@company.com.au
+OPS,Operations & Logistics,VIC,Southern Australia,Y,Christopher Lee,christopher.lee@company.com.au
+R&D,Research & Development,VIC,Southern Australia,Y,Amanda White,amanda.white@company.com.au

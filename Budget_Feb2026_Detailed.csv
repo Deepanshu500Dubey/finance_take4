@@ -1,0 +1,40 @@
+Account_Code,Account_Name,Account_Type,Category,Cost_Center,Budget_Amount,Notes
+4000,Product Sales Revenue,Revenue,Operating Revenue,MKT,30500000.00,10% growth target over Feb 2025
+4010,Service Revenue,Revenue,Operating Revenue,MKT,6500000.00,Expansion of service offerings
+4020,Subscription Revenue,Revenue,Operating Revenue,MKT,3600000.00,New subscription products launched
+4100,Interest Income,Revenue,Non-Operating Revenue,FIN,600000.00,Based on cash position
+4200,FX Gain,Revenue,Non-Operating Revenue,FIN,200000.00,Conservative estimate
+TOTAL_REVENUE,Total Revenue,Revenue,Total,ALL,41400000.00,11.4% growth over Feb 2025
+5000,Salaries and Wages,Expense,Personnel,HR,1150000.00,3% salary increase + headcount growth
+5010,Employee Benefits,Expense,Personnel,HR,1050000.00,Increased healthcare costs
+5020,Contractor Fees,Expense,Personnel,HR,900000.00,Reduced contractor dependency
+5100,Office Rent,Expense,Facilities,CORP,850000.00,New lease agreement
+5110,Utilities,Expense,Facilities,CORP,920000.00,Energy cost increases
+5120,Office Supplies,Expense,Facilities,CORP,1000000.00,Return to office initiatives
+5200,Software Licenses,Expense,IT,IT,1100000.00,New software implementations
+5210,Cloud Services,Expense,IT,IT,1400000.00,Cloud migration costs
+5220,IT Support,Expense,IT,IT,950000.00,24/7 support coverage
+5300,Professional Services,Expense,External,CORP,950000.00,Consulting projects
+5310,Legal Fees,Expense,External,CORP,1350000.00,Compliance and regulatory
+5320,Audit Fees,Expense,External,FIN,1320000.00,Expanded audit scope
+5400,Travel,Expense,T&E,MKT,1050000.00,Increased customer visits
+5410,Accommodation,Expense,T&E,MKT,1150000.00,Conference attendance
+5420,Meals and Entertainment,Expense,T&E,MKT,1200000.00,Client entertainment
+5500,Marketing,Expense,Sales,MKT,1450000.00,New product launches
+5510,Advertising,Expense,Sales,MKT,1300000.00,Digital marketing expansion
+5520,Events,Expense,Sales,MKT,1150000.00,Trade shows and events
+5600,Telecommunications,Expense,Operations,OPS,1180000.00,5G upgrades
+5610,Postage and Courier,Expense,Operations,OPS,920000.00,Logistics optimization
+5620,Insurance,Expense,Operations,OPS,1300000.00,Increased coverage
+5700,Training,Expense,Development,HR,1100000.00,Leadership development
+5710,Recruitment,Expense,Development,HR,1280000.00,Talent acquisition
+5800,Depreciation,Expense,Non-Cash,FIN,1300000.00,New asset purchases
+5810,Amortization,Expense,Non-Cash,FIN,880000.00,Software amortization
+5900,Bank Charges,Expense,Finance,FIN,1270000.00,Transaction fees
+5910,Interest Expense,Expense,Finance,FIN,950000.00,Debt servicing
+5920,FX Loss,Expense,Finance,FIN,1150000.00,Hedging costs
+TOTAL_EXPENSES,Total Expenses,Expense,Total,ALL,31270000.00,4.7% increase over Feb 2025
+NET_INCOME_BUDGET,Net Income Budget,Net Income,Total,ALL,10130000.00,24.5% margin target
+PROFIT_MARGIN_TARGET,Profit Margin Target,Ratio,Total,ALL,24.5%,Improvement over Feb 2025
+EBITDA_BUDGET,EBITDA Budget,Metric,Total,ALL,12310000.00,Target 29.7% margin
+EBITDA_MARGIN_TARGET,EBITDA Margin Target,Ratio,Total,ALL,29.7%,Stretch target

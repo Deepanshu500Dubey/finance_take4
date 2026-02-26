@@ -1,0 +1,74 @@
+Account_Code,Account_Name,Account_Type,Category,Active
+1000,Cash and Cash Equivalents,Asset,Current Assets,Y
+1010,Petty Cash,Asset,Current Assets,Y
+1100,Accounts Receivable,Asset,Current Assets,Y
+1110,Allowance for Doubtful Accounts,Asset,Current Assets,Y
+1200,Inventory - Raw Materials,Asset,Current Assets,Y
+1210,Inventory - Work in Progress,Asset,Current Assets,Y
+1220,Inventory - Finished Goods,Asset,Current Assets,Y
+1300,Prepaid Expenses,Asset,Current Assets,Y
+1310,Prepaid Insurance,Asset,Current Assets,Y
+1400,Other Current Assets,Asset,Current Assets,Y
+1500,Property Plant and Equipment,Asset,Non-Current Assets,Y
+1510,Accumulated Depreciation - PPE,Asset,Non-Current Assets,Y
+1600,Intangible Assets,Asset,Non-Current Assets,Y
+1610,Accumulated Amortization,Asset,Non-Current Assets,Y
+1700,Right of Use Assets,Asset,Non-Current Assets,Y
+1800,Investments,Asset,Non-Current Assets,Y
+1900,Deferred Tax Assets,Asset,Non-Current Assets,Y
+2000,Accounts Payable,Liability,Current Liabilities,Y
+2010,Accrued Expenses,Liability,Current Liabilities,Y
+2020,Accrued Salaries and Wages,Liability,Current Liabilities,Y
+2100,Short-term Borrowings,Liability,Current Liabilities,Y
+2110,Current Portion of Long-term Debt,Liability,Current Liabilities,Y
+2200,Tax Payable - GST,Liability,Current Liabilities,Y
+2210,Tax Payable - Income Tax,Liability,Current Liabilities,Y
+2300,Lease Liabilities - Current,Liability,Current Liabilities,Y
+2400,Other Current Liabilities,Liability,Current Liabilities,Y
+2500,Long-term Debt,Liability,Non-Current Liabilities,Y
+2600,Lease Liabilities - Non-Current,Liability,Non-Current Liabilities,Y
+2700,Deferred Tax Liabilities,Liability,Non-Current Liabilities,Y
+2800,Provisions,Liability,Non-Current Liabilities,Y
+3000,Share Capital,Equity,Equity,Y
+3100,Retained Earnings,Equity,Equity,Y
+3200,Reserves,Equity,Equity,Y
+3300,Current Year Profit/Loss,Equity,Equity,Y
+4000,Product Sales Revenue,Revenue,Operating Revenue,Y
+4010,Service Revenue,Revenue,Operating Revenue,Y
+4020,Subscription Revenue,Revenue,Operating Revenue,Y
+4100,Interest Income,Revenue,Non-Operating Revenue,Y
+4110,Dividend Income,Revenue,Non-Operating Revenue,Y
+4200,FX Gain,Revenue,Non-Operating Revenue,Y
+4300,Other Income,Revenue,Non-Operating Revenue,Y
+5000,Salaries and Wages,Expense,Personnel,Y
+5010,Employee Benefits,Expense,Personnel,Y
+5020,Contractor Fees,Expense,Personnel,Y
+5100,Office Rent,Expense,Facilities,Y
+5110,Utilities,Expense,Facilities,Y
+5120,Office Supplies,Expense,Facilities,Y
+5200,Software Licenses,Expense,IT,Y
+5210,Cloud Services,Expense,IT,Y
+5220,IT Support,Expense,IT,Y
+5300,Professional Services,Expense,External,Y
+5310,Legal Fees,Expense,External,Y
+5320,Audit Fees,Expense,External,Y
+5400,Travel,Expense,T&E,Y
+5410,Accommodation,Expense,T&E,Y
+5420,Meals and Entertainment,Expense,T&E,Y
+5500,Marketing,Expense,Sales,Y
+5510,Advertising,Expense,Sales,Y
+5520,Events,Expense,Sales,Y
+5600,Telecommunications,Expense,Operations,Y
+5610,Postage and Courier,Expense,Operations,Y
+5620,Insurance,Expense,Operations,Y
+5700,Training,Expense,Development,Y
+5710,Recruitment,Expense,Development,Y
+5800,Depreciation,Expense,Non-Cash,Y
+5810,Amortization,Expense,Non-Cash,Y
+5900,Bank Charges,Expense,Finance,Y
+5910,Interest Expense,Expense,Finance,Y
+5920,FX Loss,Expense,Finance,Y
+6000,Cost of Goods Sold,Expense,COGS,Y
+6010,Direct Materials,Expense,COGS,Y
+6020,Direct Labor,Expense,COGS,Y
+6030,Manufacturing Overhead,Expense,COGS,Y
