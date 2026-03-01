@@ -2929,10 +2929,6 @@ def get_overdue_invoices():
 # CFO FINANCIAL DASHBOARD
 # ============================================================================
 
-# ============================================================================
-# CFO FINANCIAL DASHBOARD - Actual Financial Reports
-# ============================================================================
-
 @app.get("/cfo/financial_dashboard", response_class=HTMLResponse)
 async def cfo_financial_dashboard(
     fiscal_period: str = Query("2026-02", description="Fiscal period to display"),
@@ -2940,7 +2936,6 @@ async def cfo_financial_dashboard(
 ):
     """
     Comprehensive CFO financial dashboard with actual financial data
-    Shows trial balance, P&L, budget variances, and key financial metrics
     """
     try:
         # Load financial data
@@ -2952,10 +2947,6 @@ async def cfo_financial_dashboard(
         # Filter for the period
         period_txns = [t for t in transactions if t['Fiscal_Period'] == fiscal_period]
         
-        # ====================================================================
-        # TRIAL BALANCE CALCULATION
-        # ====================================================================
-        
         # Calculate account balances
         account_balances = defaultdict(float)
         for txn in period_txns:
@@ -2963,98 +2954,14 @@ async def cfo_financial_dashboard(
                 account_balances[txn['Account_Code_Raw']] += float(txn['Amount'])
         
         # Group by account type
-        type_totals = {
-            'Revenue': 0,
-            'Expense': 0,
-            'Asset': 0,
-            'Liability': 0,
-            'Equity': 0
-        }
-        
-        # Detailed account list for display
-        revenue_accounts = []
-        expense_accounts = []
-        asset_accounts = []
-        liability_accounts = []
-        equity_accounts = []
-        
+        type_totals = defaultdict(float)
         for account, balance in account_balances.items():
             if account in coa:
-                acc_type = coa[account]['type']
-                acc_name = coa[account]['name']
-                type_totals[acc_type] += balance
-                
-                account_info = {
-                    'code': account,
-                    'name': acc_name,
-                    'balance': balance
-                }
-                
-                if acc_type == 'Revenue':
-                    revenue_accounts.append(account_info)
-                elif acc_type == 'Expense':
-                    expense_accounts.append(account_info)
-                elif acc_type == 'Asset':
-                    asset_accounts.append(account_info)
-                elif acc_type == 'Liability':
-                    liability_accounts.append(account_info)
-                elif acc_type == 'Equity':
-                    equity_accounts.append(account_info)
+                type_totals[coa[account]['type']] += balance
         
-        # Sort accounts by balance (largest first)
-        revenue_accounts.sort(key=lambda x: abs(x['balance']), reverse=True)
-        expense_accounts.sort(key=lambda x: abs(x['balance']), reverse=True)
-        
-        # Calculate Net Income
-        net_income = type_totals['Revenue'] - type_totals['Expense']
-        
-        # ====================================================================
-        # BUDGET VARIANCE CALCULATION
-        # ====================================================================
-        
-        # Calculate actuals by category
-        actuals_by_category = defaultdict(float)
-        for txn in period_txns:
-            account = txn['Account_Code_Raw']
-            if account in coa:
-                category = coa[account]['category']
-                actuals_by_category[category] += float(txn['Amount'])
-        
-        # Calculate budget by category
-        budget_by_category = defaultdict(float)
-        for item in budget_data:
-            category = item['Category']
-            if category.upper() != 'TOTAL' and not item['Account_Code'].startswith('TOTAL'):
-                budget_by_category[category] += float(item['Budget_Amount'])
-        
-        # Calculate variances
-        variances = []
-        total_variance = 0
-        for category in set(list(actuals_by_category.keys()) + list(budget_by_category.keys())):
-            actual = actuals_by_category.get(category, 0)
-            budget = budget_by_category.get(category, 0)
-            variance = actual - budget
-            variance_pct = (variance / budget * 100) if budget != 0 else 0
-            total_variance += abs(variance)
-            
-            variances.append({
-                'category': category,
-                'actual': actual,
-                'budget': budget,
-                'variance': variance,
-                'variance_pct': variance_pct,
-                'status': 'favorable' if variance < 0 else 'unfavorable'
-            })
-        
-        variances.sort(key=lambda x: abs(x['variance']), reverse=True)
-        
-        # ====================================================================
-        # AR METRICS
-        # ====================================================================
-        
+        # Calculate AR metrics
         total_ar = sum(float(r['Outstanding_Balance']) for r in ar_records)
         overdue_ar = sum(float(r['Outstanding_Balance']) for r in ar_records if r['Status'] == 'Overdue')
-        current_ar = total_ar - overdue_ar
         
         # AR Aging
         aging_buckets = {
@@ -3077,18 +2984,41 @@ async def cfo_financial_dashboard(
             else:
                 aging_buckets['90+ Days'] += amount
         
-        # ====================================================================
-        # PROFITABILITY METRICS
-        # ====================================================================
+        # Calculate budget variances
+        actuals_by_category = defaultdict(float)
+        for txn in period_txns:
+            account = txn['Account_Code_Raw']
+            if account in coa:
+                category = coa[account]['category']
+                actuals_by_category[category] += float(txn['Amount'])
         
-        # Calculate margins
-        gross_profit = type_totals['Revenue'] - sum(e['balance'] for e in expense_accounts if 'cost' in e['name'].lower())
-        gross_margin = (gross_profit / type_totals['Revenue'] * 100) if type_totals['Revenue'] != 0 else 0
-        net_margin = (net_income / type_totals['Revenue'] * 100) if type_totals['Revenue'] != 0 else 0
+        budget_by_category = defaultdict(float)
+        for item in budget_data:
+            category = item['Category']
+            if category.upper() != 'TOTAL' and not item['Account_Code'].startswith('TOTAL'):
+                budget_by_category[category] += float(item['Budget_Amount'])
         
-        # ====================================================================
-        # HTML DASHBOARD
-        # ====================================================================
+        variances = []
+        for category in set(list(actuals_by_category.keys()) + list(budget_by_category.keys())):
+            actual = actuals_by_category.get(category, 0)
+            budget = budget_by_category.get(category, 0)
+            variance = actual - budget
+            variance_pct = (variance / budget * 100) if budget != 0 else 0
+            
+            variances.append({
+                'category': category,
+                'actual': actual,
+                'budget': budget,
+                'variance': variance,
+                'variance_pct': variance_pct,
+                'status': 'favorable' if variance < 0 else 'unfavorable'
+            })
+        
+        variances.sort(key=lambda x: abs(x['variance']), reverse=True)
+        
+        # Calculate metrics
+        net_income = type_totals.get('Revenue', 0) - type_totals.get('Expense', 0)
+        gross_margin = (net_income / type_totals.get('Revenue', 1)) * 100 if type_totals.get('Revenue', 0) != 0 else 0
         
         html_content = f"""
         <!DOCTYPE html>
@@ -3097,556 +3027,103 @@ async def cfo_financial_dashboard(
             <title>CFO Financial Dashboard - {fiscal_period}</title>
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <style>
-                * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-                
-                body {{
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    background: #f5f7fa;
-                    padding: 20px;
-                }}
-                
-                .dashboard-header {{
-                    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-                    color: white;
-                    padding: 30px;
-                    border-radius: 15px;
-                    margin-bottom: 30px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-                }}
-                
-                .header-title {{
-                    font-size: 2.5em;
-                    margin-bottom: 10px;
-                }}
-                
-                .header-sub {{
-                    opacity: 0.9;
-                    font-size: 1.1em;
-                }}
-                
-                .period-badge {{
-                    background: rgba(255,255,255,0.2);
-                    padding: 8px 16px;
-                    border-radius: 20px;
-                    display: inline-block;
-                    margin-top: 15px;
-                }}
-                
-                .kpi-grid {{
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                    gap: 20px;
-                    margin-bottom: 30px;
-                }}
-                
-                .kpi-card {{
-                    background: white;
-                    padding: 25px;
-                    border-radius: 15px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-                    transition: transform 0.3s;
-                }}
-                
-                .kpi-card:hover {{
-                    transform: translateY(-5px);
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-                }}
-                
-                .kpi-title {{
-                    color: #666;
-                    font-size: 0.9em;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                    margin-bottom: 10px;
-                }}
-                
-                .kpi-value {{
-                    font-size: 2.2em;
-                    font-weight: bold;
-                    color: #1e3c72;
-                }}
-                
-                .kpi-trend {{
-                    margin-top: 10px;
-                    font-size: 0.9em;
-                }}
-                
-                .trend-up {{ color: #4CAF50; }}
-                .trend-down {{ color: #f44336; }}
-                
-                .chart-grid {{
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-                    gap: 20px;
-                    margin-bottom: 30px;
-                }}
-                
-                .chart-card {{
-                    background: white;
-                    padding: 20px;
-                    border-radius: 15px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-                }}
-                
-                .chart-title {{
-                    font-size: 1.2em;
-                    color: #1e3c72;
-                    margin-bottom: 20px;
-                    padding-bottom: 10px;
-                    border-bottom: 2px solid #f0f0f0;
-                }}
-                
-                .chart-container {{
-                    height: 300px;
-                    position: relative;
-                }}
-                
-                .financial-grid {{
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-                    gap: 20px;
-                    margin-bottom: 30px;
-                }}
-                
-                .financial-card {{
-                    background: white;
-                    padding: 20px;
-                    border-radius: 15px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-                }}
-                
-                .financial-table {{
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-top: 15px;
-                }}
-                
-                .financial-table th {{
-                    text-align: left;
-                    padding: 10px;
-                    background: #f8f9fa;
-                    color: #1e3c72;
-                    font-weight: 600;
-                }}
-                
-                .financial-table td {{
-                    padding: 10px;
-                    border-bottom: 1px solid #f0f0f0;
-                }}
-                
-                .financial-table tr:last-child td {{
-                    border-bottom: none;
-                }}
-                
-                .amount {{
-                    text-align: right;
-                    font-weight: 500;
-                }}
-                
-                .total-row {{
-                    background: #f8f9fa;
-                    font-weight: bold;
-                }}
-                
-                .variance-favorable {{
-                    color: #4CAF50;
-                    font-weight: 500;
-                }}
-                
-                .variance-unfavorable {{
-                    color: #f44336;
-                    font-weight: 500;
-                }}
-                
-                .badge {{
-                    padding: 4px 8px;
-                    border-radius: 12px;
-                    font-size: 0.8em;
-                    font-weight: 500;
-                }}
-                
-                .badge-success {{ background: #4CAF50; color: white; }}
-                .badge-warning {{ background: #FF9800; color: white; }}
-                .badge-danger {{ background: #f44336; color: white; }}
-                
-                .footer {{
-                    text-align: center;
-                    margin-top: 30px;
-                    padding: 20px;
-                    color: #666;
-                }}
-                
-                .footer a {{
-                    color: #1e3c72;
-                    text-decoration: none;
-                    margin: 0 10px;
-                }}
-                
-                .footer a:hover {{
-                    text-decoration: underline;
-                }}
-                
-                @media (max-width: 768px) {{
-                    .chart-grid {{
-                        grid-template-columns: 1fr;
-                    }}
-                    
-                    .financial-grid {{
-                        grid-template-columns: 1fr;
-                    }}
-                }}
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                       background: #f5f7fa; padding: 20px; }}
+                .dashboard-header {{ background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                                   color: white; padding: 30px; border-radius: 15px;
+                                   margin-bottom: 30px; }}
+                .kpi-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                           gap: 20px; margin-bottom: 30px; }}
+                .kpi-card {{ background: white; padding: 25px; border-radius: 15px;
+                           box-shadow: 0 5px 15px rgba(0,0,0,0.08); }}
+                .chart-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+                             gap: 20px; margin-bottom: 30px; }}
+                .chart-card {{ background: white; padding: 20px; border-radius: 15px; }}
+                .btn {{ display: inline-block; padding: 10px 20px; background: #4CAF50;
+                       color: white; text-decoration: none; border-radius: 5px; margin: 5px; }}
+                .btn-email {{ background: #FF9800; }}
             </style>
         </head>
         <body>
             <div class="dashboard-header">
-                <div class="header-title">💰 CFO Financial Dashboard</div>
-                <div class="header-sub">Real-time financial performance and month-end close status</div>
-                <div class="period-badge">
-                    📅 Period: {fiscal_period} | Entity: {entity_code} | 
-                    As of: {datetime.now().strftime('%Y-%m-%d %H:%M')}
+                <h1>💰 CFO Financial Dashboard</h1>
+                <p>Period: {fiscal_period} | Entity: {entity_code} | 
+                   As of: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                <div style="margin-top: 20px;">
+                    <a href="/reports/email/preview?fiscal_period={fiscal_period}" 
+                       class="btn btn-email" target="_blank">📧 Email Reports</a>
+                    <a href="/dashboard" class="btn" target="_blank">📊 Approval Dashboard</a>
                 </div>
             </div>
             
             <!-- KPI Cards -->
             <div class="kpi-grid">
                 <div class="kpi-card">
-                    <div class="kpi-title">Total Revenue</div>
-                    <div class="kpi-value">${type_totals['Revenue']:,.0f}</div>
-                    <div class="kpi-trend">
-                        <span class="{'trend-up' if net_income > 0 else 'trend-down'}">
-                            Net Income: ${net_income:,.0f}
-                        </span>
-                    </div>
+                    <h3>Total Revenue</h3>
+                    <h2>${type_totals.get('Revenue', 0):,.0f}</h2>
+                    <p>Net Income: ${net_income:,.0f}</p>
                 </div>
-                
                 <div class="kpi-card">
-                    <div class="kpi-title">Total Expenses</div>
-                    <div class="kpi-value">${type_totals['Expense']:,.0f}</div>
-                    <div class="kpi-trend">
-                        <span>vs Budget: ${type_totals['Expense'] - budget_by_category.get('Operating Expenses', 0):,.0f}</span>
-                    </div>
+                    <h3>Total Expenses</h3>
+                    <h2>${type_totals.get('Expense', 0):,.0f}</h2>
                 </div>
-                
                 <div class="kpi-card">
-                    <div class="kpi-title">Gross Margin</div>
-                    <div class="kpi-value">{gross_margin:.1f}%</div>
-                    <div class="kpi-trend">
-                        <span>Gross Profit: ${gross_profit:,.0f}</span>
-                    </div>
+                    <h3>Gross Margin</h3>
+                    <h2>{gross_margin:.1f}%</h2>
                 </div>
-                
                 <div class="kpi-card">
-                    <div class="kpi-title">Net Margin</div>
-                    <div class="kpi-value">{net_margin:.1f}%</div>
-                    <div class="kpi-trend">
-                        <span>Net Income: ${net_income:,.0f}</span>
-                    </div>
-                </div>
-                
-                <div class="kpi-card">
-                    <div class="kpi-title">AR Outstanding</div>
-                    <div class="kpi-value">${total_ar:,.0f}</div>
-                    <div class="kpi-trend">
-                        <span class="trend-down">Overdue: ${overdue_ar:,.0f}</span>
-                    </div>
-                </div>
-                
-                <div class="kpi-card">
-                    <div class="kpi-title">Budget Variance</div>
-                    <div class="kpi-value">${sum(v['variance'] for v in variances):,.0f}</div>
-                    <div class="kpi-trend">
-                        <span>{'Favorable' if sum(v['variance'] for v in variances) < 0 else 'Unfavorable'}</span>
-                    </div>
+                    <h3>AR Outstanding</h3>
+                    <h2>${total_ar:,.0f}</h2>
+                    <p>Overdue: ${overdue_ar:,.0f}</p>
                 </div>
             </div>
             
             <!-- Charts -->
             <div class="chart-grid">
-                <!-- Revenue vs Expense Chart -->
                 <div class="chart-card">
-                    <div class="chart-title">📊 Revenue vs Expenses</div>
-                    <div class="chart-container">
-                        <canvas id="revenueExpenseChart"></canvas>
-                    </div>
+                    <h3>Revenue vs Expenses</h3>
+                    <canvas id="revExpChart" style="height: 300px;"></canvas>
                 </div>
-                
-                <!-- Budget Variance Chart -->
                 <div class="chart-card">
-                    <div class="chart-title">📈 Budget Variance by Category</div>
-                    <div class="chart-container">
-                        <canvas id="varianceChart"></canvas>
-                    </div>
-                </div>
-                
-                <!-- AR Aging Chart -->
-                <div class="chart-card">
-                    <div class="chart-title">📅 AR Aging Analysis</div>
-                    <div class="chart-container">
-                        <canvas id="arAgingChart"></canvas>
-                    </div>
-                </div>
-                
-                <!-- Top Expenses Chart -->
-                <div class="chart-card">
-                    <div class="chart-title">🔥 Top 5 Expenses</div>
-                    <div class="chart-container">
-                        <canvas id="topExpensesChart"></canvas>
-                    </div>
+                    <h3>AR Aging</h3>
+                    <canvas id="arAgingChart" style="height: 300px;"></canvas>
                 </div>
             </div>
             
-            <!-- Financial Statements -->
-            <div class="financial-grid">
-                <!-- Income Statement -->
-                <div class="financial-card">
-                    <div class="chart-title">📋 Income Statement</div>
-                    <table class="financial-table">
-                        <tr>
-                            <th>Account</th>
-                            <th class="amount">Amount</th>
-                        </tr>
-                        <tr>
-                            <td><strong>Revenue</strong></td>
-                            <td class="amount">${type_totals['Revenue']:,.0f}</td>
-                        </tr>
-        """
-        
-        # Add top 5 revenue accounts
-        for acc in revenue_accounts[:5]:
-            html_content += f"""
-                        <tr>
-                            <td style="padding-left: 20px;">{acc['code']} - {acc['name'][:30]}</td>
-                            <td class="amount">${acc['balance']:,.0f}</td>
-                        </tr>
-            """
-        
-        html_content += f"""
-                        <tr>
-                            <td><strong>Total Expenses</strong></td>
-                            <td class="amount">${type_totals['Expense']:,.0f}</td>
-                        </tr>
-        """
-        
-        # Add top 5 expense accounts
-        for acc in expense_accounts[:5]:
-            html_content += f"""
-                        <tr>
-                            <td style="padding-left: 20px;">{acc['code']} - {acc['name'][:30]}</td>
-                            <td class="amount">${acc['balance']:,.0f}</td>
-                        </tr>
-            """
-        
-        html_content += f"""
-                        <tr class="total-row">
-                            <td><strong>Net Income</strong></td>
-                            <td class="amount"><strong>${net_income:,.0f}</strong></td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <!-- Budget Variance Table -->
-                <div class="financial-card">
-                    <div class="chart-title">📊 Budget Variance Analysis</div>
-                    <table class="financial-table">
-                        <tr>
-                            <th>Category</th>
-                            <th class="amount">Budget</th>
-                            <th class="amount">Actual</th>
-                            <th class="amount">Variance</th>
-                        </tr>
-        """
-        
-        for var in variances[:8]:
-            variance_class = 'variance-favorable' if var['variance'] < 0 else 'variance-unfavorable'
-            html_content += f"""
-                        <tr>
-                            <td>{var['category']}</td>
-                            <td class="amount">${var['budget']:,.0f}</td>
-                            <td class="amount">${var['actual']:,.0f}</td>
-                            <td class="amount {variance_class}">${var['variance']:,.0f} ({var['variance_pct']:.1f}%)</td>
-                        </tr>
-            """
-        
-        html_content += f"""
-                    </table>
-                </div>
-                
-                <!-- AR Aging Table -->
-                <div class="financial-card">
-                    <div class="chart-title">📅 Accounts Receivable Aging</div>
-                    <table class="financial-table">
-                        <tr>
-                            <th>Aging Bucket</th>
-                            <th class="amount">Amount</th>
-                            <th class="amount">% of Total</th>
-                        </tr>
-        """
-        
-        for bucket, amount in aging_buckets.items():
-            percentage = (amount / total_ar * 100) if total_ar > 0 else 0
-            badge_class = 'badge-success' if bucket == '0-30 Days' else 'badge-warning' if bucket in ['31-60 Days', '61-90 Days'] else 'badge-danger'
-            html_content += f"""
-                        <tr>
-                            <td><span class="badge {badge_class}">{bucket}</span></td>
-                            <td class="amount">${amount:,.0f}</td>
-                            <td class="amount">{percentage:.1f}%</td>
-                        </tr>
-            """
-        
-        html_content += f"""
-                        <tr class="total-row">
-                            <td><strong>Total AR</strong></td>
-                            <td class="amount"><strong>${total_ar:,.0f}</strong></td>
-                            <td class="amount"><strong>100%</strong></td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <!-- Balance Sheet Summary -->
-                <div class="financial-card">
-                    <div class="chart-title">⚖️ Balance Sheet Summary</div>
-                    <table class="financial-table">
-                        <tr>
-                            <th>Category</th>
-                            <th class="amount">Amount</th>
-                        </tr>
-                        <tr>
-                            <td><strong>Total Assets</strong></td>
-                            <td class="amount">${type_totals['Asset']:,.0f}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-left: 20px;">Cash & AR</td>
-                            <td class="amount">${type_totals['Asset'] * 0.6:,.0f}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Total Liabilities</strong></td>
-                            <td class="amount">${type_totals['Liability']:,.0f}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Total Equity</strong></td>
-                            <td class="amount">${type_totals['Equity']:,.0f}</td>
-                        </tr>
-                        <tr class="total-row">
-                            <td><strong>Liabilities + Equity</strong></td>
-                            <td class="amount"><strong>${type_totals['Liability'] + type_totals['Equity']:,.0f}</strong></td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Navigation -->
-            <div class="footer">
-                <a href="/dashboard">← Approval Dashboard</a>
-                <a href="/cfo/report">📊 JSON Report</a>
-                <a href="/docs">📚 API Docs</a>
-                <p style="margin-top: 20px;">© 2026 Finance Month-End Close AI Agent v2.0.0</p>
+            <!-- Navigation to Email -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="/reports/email/send-test?fiscal_period={fiscal_period}" class="btn btn-email">
+                    📧 Send Test Email
+                </a>
+                <a href="/reports/email/status" class="btn" style="background: #9C27B0;">
+                    📧 Check Email Status
+                </a>
             </div>
             
             <script>
-                // Revenue vs Expense Chart
-                const revExpCtx = document.getElementById('revenueExpenseChart').getContext('2d');
-                new Chart(revExpCtx, {{
+                // Revenue vs Expenses Chart
+                new Chart(document.getElementById('revExpChart'), {{
                     type: 'doughnut',
                     data: {{
                         labels: ['Revenue', 'Expenses', 'Net Income'],
                         datasets: [{{
-                            data: [{type_totals['Revenue']}, {type_totals['Expense']}, {abs(net_income)}],
-                            backgroundColor: ['#4CAF50', '#f44336', '#2196F3'],
-                            borderWidth: 0
+                            data: [{type_totals.get('Revenue', 0)}, 
+                                   {type_totals.get('Expense', 0)}, 
+                                   {abs(net_income)}],
+                            backgroundColor: ['#4CAF50', '#f44336', '#2196F3']
                         }}]
-                    }},
-                    options: {{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {{
-                            legend: {{ position: 'bottom' }}
-                        }},
-                        cutout: '60%'
-                    }}
-                }});
-                
-                // Budget Variance Chart
-                const varianceCtx = document.getElementById('varianceChart').getContext('2d');
-                new Chart(varianceCtx, {{
-                    type: 'bar',
-                    data: {{
-                        labels: {str([v['category'][:15] for v in variances[:6]])},
-                        datasets: [{{
-                            label: 'Variance ($)',
-                            data: {str([v['variance'] for v in variances[:6]])},
-                            backgroundColor: {str(['#4CAF50' if v['variance'] < 0 else '#f44336' for v in variances[:6]])},
-                            borderRadius: 5
-                        }}]
-                    }},
-                    options: {{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {{
-                            legend: {{ display: false }}
-                        }},
-                        scales: {{
-                            y: {{
-                                beginAtZero: true,
-                                ticks: {{
-                                    callback: function(value) {{
-                                        return '$' + value;
-                                    }}
-                                }}
-                            }}
-                        }}
                     }}
                 }});
                 
                 // AR Aging Chart
-                const arCtx = document.getElementById('arAgingChart').getContext('2d');
-                new Chart(arCtx, {{
+                new Chart(document.getElementById('arAgingChart'), {{
                     type: 'pie',
                     data: {{
-                        labels: {str(list(aging_buckets.keys()))},
+                        labels: {list(aging_buckets.keys())},
                         datasets: [{{
-                            data: {str(list(aging_buckets.values()))},
-                            backgroundColor: ['#4CAF50', '#FF9800', '#f44336', '#9C27B0'],
-                            borderWidth: 0
+                            data: {list(aging_buckets.values())},
+                            backgroundColor: ['#4CAF50', '#FF9800', '#f44336', '#9C27B0']
                         }}]
-                    }},
-                    options: {{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {{
-                            legend: {{ position: 'bottom' }}
-                        }}
-                    }}
-                }});
-                
-                // Top Expenses Chart
-                const topExpCtx = document.getElementById('topExpensesChart').getContext('2d');
-                new Chart(topExpCtx, {{
-                    type: 'bar',
-                    data: {{
-                        labels: {str([f"{e['code']}" for e in expense_accounts[:5]])},
-                        datasets: [{{
-                            label: 'Amount ($)',
-                            data: {str([e['balance'] for e in expense_accounts[:5]])},
-                            backgroundColor: '#FF9800',
-                            borderRadius: 5
-                        }}]
-                    }},
-                    options: {{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        indexAxis: 'y',
-                        plugins: {{
-                            legend: {{ display: false }}
-                        }},
-                        scales: {{
-                            x: {{
-                                ticks: {{
-                                    callback: function(value) {{
-                                        return '$' + value;
-                                    }}
-                                }}
-                            }}
-                        }}
                     }}
                 }});
             </script>
@@ -6971,6 +6448,7 @@ async def cfo_financial_dashboard(
 ):
     """
     Comprehensive CFO financial dashboard with actual financial data
+    Shows trial balance, P&L, budget variances, and key financial metrics
     """
     try:
         # Load financial data
@@ -6982,6 +6460,10 @@ async def cfo_financial_dashboard(
         # Filter for the period
         period_txns = [t for t in transactions if t['Fiscal_Period'] == fiscal_period]
         
+        # ====================================================================
+        # TRIAL BALANCE CALCULATION
+        # ====================================================================
+        
         # Calculate account balances
         account_balances = defaultdict(float)
         for txn in period_txns:
@@ -6989,14 +6471,98 @@ async def cfo_financial_dashboard(
                 account_balances[txn['Account_Code_Raw']] += float(txn['Amount'])
         
         # Group by account type
-        type_totals = defaultdict(float)
+        type_totals = {
+            'Revenue': 0,
+            'Expense': 0,
+            'Asset': 0,
+            'Liability': 0,
+            'Equity': 0
+        }
+        
+        # Detailed account list for display
+        revenue_accounts = []
+        expense_accounts = []
+        asset_accounts = []
+        liability_accounts = []
+        equity_accounts = []
+        
         for account, balance in account_balances.items():
             if account in coa:
-                type_totals[coa[account]['type']] += balance
+                acc_type = coa[account]['type']
+                acc_name = coa[account]['name']
+                type_totals[acc_type] += balance
+                
+                account_info = {
+                    'code': account,
+                    'name': acc_name,
+                    'balance': balance
+                }
+                
+                if acc_type == 'Revenue':
+                    revenue_accounts.append(account_info)
+                elif acc_type == 'Expense':
+                    expense_accounts.append(account_info)
+                elif acc_type == 'Asset':
+                    asset_accounts.append(account_info)
+                elif acc_type == 'Liability':
+                    liability_accounts.append(account_info)
+                elif acc_type == 'Equity':
+                    equity_accounts.append(account_info)
         
-        # Calculate AR metrics
+        # Sort accounts by balance (largest first)
+        revenue_accounts.sort(key=lambda x: abs(x['balance']), reverse=True)
+        expense_accounts.sort(key=lambda x: abs(x['balance']), reverse=True)
+        
+        # Calculate Net Income
+        net_income = type_totals['Revenue'] - type_totals['Expense']
+        
+        # ====================================================================
+        # BUDGET VARIANCE CALCULATION
+        # ====================================================================
+        
+        # Calculate actuals by category
+        actuals_by_category = defaultdict(float)
+        for txn in period_txns:
+            account = txn['Account_Code_Raw']
+            if account in coa:
+                category = coa[account]['category']
+                actuals_by_category[category] += float(txn['Amount'])
+        
+        # Calculate budget by category
+        budget_by_category = defaultdict(float)
+        for item in budget_data:
+            category = item['Category']
+            if category.upper() != 'TOTAL' and not item['Account_Code'].startswith('TOTAL'):
+                budget_by_category[category] += float(item['Budget_Amount'])
+        
+        # Calculate variances
+        variances = []
+        total_variance = 0
+        for category in set(list(actuals_by_category.keys()) + list(budget_by_category.keys())):
+            actual = actuals_by_category.get(category, 0)
+            budget = budget_by_category.get(category, 0)
+            variance = actual - budget
+            variance_pct = (variance / budget * 100) if budget != 0 else 0
+            total_variance += abs(variance)
+            
+            variances.append({
+                'category': category,
+                'actual': actual,
+                'budget': budget,
+                'variance': variance,
+                'variance_pct': variance_pct,
+                'status': 'favorable' if variance < 0 else 'unfavorable'
+            })
+        
+        variances.sort(key=lambda x: abs(x['variance']), reverse=True)
+        
+        # ====================================================================
+        # AR METRICS
+        # ====================================================================
+        
         total_ar = sum(float(r['Outstanding_Balance']) for r in ar_records)
         overdue_ar = sum(float(r['Outstanding_Balance']) for r in ar_records if r['Status'] == 'Overdue')
+        current_ar = total_ar - overdue_ar
         
         # AR Aging
         aging_buckets = {
@@ -7019,41 +6585,18 @@ async def cfo_financial_dashboard(
             else:
                 aging_buckets['90+ Days'] += amount
         
-        # Calculate budget variances
-        actuals_by_category = defaultdict(float)
-        for txn in period_txns:
-            account = txn['Account_Code_Raw']
-            if account in coa:
-                category = coa[account]['category']
-                actuals_by_category[category] += float(txn['Amount'])
+        # ====================================================================
+        # PROFITABILITY METRICS
+        # ====================================================================
         
-        budget_by_category = defaultdict(float)
-        for item in budget_data:
-            category = item['Category']
-            if category.upper() != 'TOTAL' and not item['Account_Code'].startswith('TOTAL'):
-                budget_by_category[category] += float(item['Budget_Amount'])
+        # Calculate margins
+        gross_profit = type_totals['Revenue'] - sum(e['balance'] for e in expense_accounts if 'cost' in e['name'].lower())
+        gross_margin = (gross_profit / type_totals['Revenue'] * 100) if type_totals['Revenue'] != 0 else 0
+        net_margin = (net_income / type_totals['Revenue'] * 100) if type_totals['Revenue'] != 0 else 0
         
-        variances = []
-        for category in set(list(actuals_by_category.keys()) + list(budget_by_category.keys())):
-            actual = actuals_by_category.get(category, 0)
-            budget = budget_by_category.get(category, 0)
-            variance = actual - budget
-            variance_pct = (variance / budget * 100) if budget != 0 else 0
-            
-            variances.append({
-                'category': category,
-                'actual': actual,
-                'budget': budget,
-                'variance': variance,
-                'variance_pct': variance_pct,
-                'status': 'favorable' if variance < 0 else 'unfavorable'
-            })
-        
-        variances.sort(key=lambda x: abs(x['variance']), reverse=True)
-        
-        # Calculate metrics
-        net_income = type_totals.get('Revenue', 0) - type_totals.get('Expense', 0)
-        gross_margin = (net_income / type_totals.get('Revenue', 1)) * 100 if type_totals.get('Revenue', 0) != 0 else 0
+        # ====================================================================
+        # HTML DASHBOARD
+        # ====================================================================
         
         html_content = f"""
         <!DOCTYPE html>
@@ -7062,103 +6605,556 @@ async def cfo_financial_dashboard(
             <title>CFO Financial Dashboard - {fiscal_period}</title>
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <style>
-                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                       background: #f5f7fa; padding: 20px; }}
-                .dashboard-header {{ background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-                                   color: white; padding: 30px; border-radius: 15px;
-                                   margin-bottom: 30px; }}
-                .kpi-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                           gap: 20px; margin-bottom: 30px; }}
-                .kpi-card {{ background: white; padding: 25px; border-radius: 15px;
-                           box-shadow: 0 5px 15px rgba(0,0,0,0.08); }}
-                .chart-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-                             gap: 20px; margin-bottom: 30px; }}
-                .chart-card {{ background: white; padding: 20px; border-radius: 15px; }}
-                .btn {{ display: inline-block; padding: 10px 20px; background: #4CAF50;
-                       color: white; text-decoration: none; border-radius: 5px; margin: 5px; }}
-                .btn-email {{ background: #FF9800; }}
+                * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+                
+                body {{
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background: #f5f7fa;
+                    padding: 20px;
+                }}
+                
+                .dashboard-header {{
+                    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                    color: white;
+                    padding: 30px;
+                    border-radius: 15px;
+                    margin-bottom: 30px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+                }}
+                
+                .header-title {{
+                    font-size: 2.5em;
+                    margin-bottom: 10px;
+                }}
+                
+                .header-sub {{
+                    opacity: 0.9;
+                    font-size: 1.1em;
+                }}
+                
+                .period-badge {{
+                    background: rgba(255,255,255,0.2);
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    display: inline-block;
+                    margin-top: 15px;
+                }}
+                
+                .kpi-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 30px;
+                }}
+                
+                .kpi-card {{
+                    background: white;
+                    padding: 25px;
+                    border-radius: 15px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+                    transition: transform 0.3s;
+                }}
+                
+                .kpi-card:hover {{
+                    transform: translateY(-5px);
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+                }}
+                
+                .kpi-title {{
+                    color: #666;
+                    font-size: 0.9em;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    margin-bottom: 10px;
+                }}
+                
+                .kpi-value {{
+                    font-size: 2.2em;
+                    font-weight: bold;
+                    color: #1e3c72;
+                }}
+                
+                .kpi-trend {{
+                    margin-top: 10px;
+                    font-size: 0.9em;
+                }}
+                
+                .trend-up {{ color: #4CAF50; }}
+                .trend-down {{ color: #f44336; }}
+                
+                .chart-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 30px;
+                }}
+                
+                .chart-card {{
+                    background: white;
+                    padding: 20px;
+                    border-radius: 15px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+                }}
+                
+                .chart-title {{
+                    font-size: 1.2em;
+                    color: #1e3c72;
+                    margin-bottom: 20px;
+                    padding-bottom: 10px;
+                    border-bottom: 2px solid #f0f0f0;
+                }}
+                
+                .chart-container {{
+                    height: 300px;
+                    position: relative;
+                }}
+                
+                .financial-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 30px;
+                }}
+                
+                .financial-card {{
+                    background: white;
+                    padding: 20px;
+                    border-radius: 15px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+                }}
+                
+                .financial-table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 15px;
+                }}
+                
+                .financial-table th {{
+                    text-align: left;
+                    padding: 10px;
+                    background: #f8f9fa;
+                    color: #1e3c72;
+                    font-weight: 600;
+                }}
+                
+                .financial-table td {{
+                    padding: 10px;
+                    border-bottom: 1px solid #f0f0f0;
+                }}
+                
+                .financial-table tr:last-child td {{
+                    border-bottom: none;
+                }}
+                
+                .amount {{
+                    text-align: right;
+                    font-weight: 500;
+                }}
+                
+                .total-row {{
+                    background: #f8f9fa;
+                    font-weight: bold;
+                }}
+                
+                .variance-favorable {{
+                    color: #4CAF50;
+                    font-weight: 500;
+                }}
+                
+                .variance-unfavorable {{
+                    color: #f44336;
+                    font-weight: 500;
+                }}
+                
+                .badge {{
+                    padding: 4px 8px;
+                    border-radius: 12px;
+                    font-size: 0.8em;
+                    font-weight: 500;
+                }}
+                
+                .badge-success {{ background: #4CAF50; color: white; }}
+                .badge-warning {{ background: #FF9800; color: white; }}
+                .badge-danger {{ background: #f44336; color: white; }}
+                
+                .footer {{
+                    text-align: center;
+                    margin-top: 30px;
+                    padding: 20px;
+                    color: #666;
+                }}
+                
+                .footer a {{
+                    color: #1e3c72;
+                    text-decoration: none;
+                    margin: 0 10px;
+                }}
+                
+                .footer a:hover {{
+                    text-decoration: underline;
+                }}
+                
+                @media (max-width: 768px) {{
+                    .chart-grid {{
+                        grid-template-columns: 1fr;
+                    }}
+                    
+                    .financial-grid {{
+                        grid-template-columns: 1fr;
+                    }}
+                }}
             </style>
         </head>
         <body>
             <div class="dashboard-header">
-                <h1>💰 CFO Financial Dashboard</h1>
-                <p>Period: {fiscal_period} | Entity: {entity_code} | 
-                   As of: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-                <div style="margin-top: 20px;">
-                    <a href="/reports/email/preview?fiscal_period={fiscal_period}" 
-                       class="btn btn-email" target="_blank">📧 Email Reports</a>
-                    <a href="/dashboard" class="btn" target="_blank">📊 Approval Dashboard</a>
+                <div class="header-title">💰 CFO Financial Dashboard</div>
+                <div class="header-sub">Real-time financial performance and month-end close status</div>
+                <div class="period-badge">
+                    📅 Period: {fiscal_period} | Entity: {entity_code} |
+                    As of: {datetime.now().strftime('%Y-%m-%d %H:%M')}
                 </div>
             </div>
             
             <!-- KPI Cards -->
             <div class="kpi-grid">
                 <div class="kpi-card">
-                    <h3>Total Revenue</h3>
-                    <h2>${type_totals.get('Revenue', 0):,.0f}</h2>
-                    <p>Net Income: ${net_income:,.0f}</p>
+                    <div class="kpi-title">Total Revenue</div>
+                    <div class="kpi-value">${type_totals['Revenue']:,.0f}</div>
+                    <div class="kpi-trend">
+                        <span class="{'trend-up' if net_income > 0 else 'trend-down'}">
+                            Net Income: ${net_income:,.0f}
+                        </span>
+                    </div>
                 </div>
+                
                 <div class="kpi-card">
-                    <h3>Total Expenses</h3>
-                    <h2>${type_totals.get('Expense', 0):,.0f}</h2>
+                    <div class="kpi-title">Total Expenses</div>
+                    <div class="kpi-value">${type_totals['Expense']:,.0f}</div>
+                    <div class="kpi-trend">
+                        <span>vs Budget: ${type_totals['Expense'] - budget_by_category.get('Operating Expenses', 0):,.0f}</span>
+                    </div>
                 </div>
+                
                 <div class="kpi-card">
-                    <h3>Gross Margin</h3>
-                    <h2>{gross_margin:.1f}%</h2>
+                    <div class="kpi-title">Gross Margin</div>
+                    <div class="kpi-value">{gross_margin:.1f}%</div>
+                    <div class="kpi-trend">
+                        <span>Gross Profit: ${gross_profit:,.0f}</span>
+                    </div>
                 </div>
+                
                 <div class="kpi-card">
-                    <h3>AR Outstanding</h3>
-                    <h2>${total_ar:,.0f}</h2>
-                    <p>Overdue: ${overdue_ar:,.0f}</p>
+                    <div class="kpi-title">Net Margin</div>
+                    <div class="kpi-value">{net_margin:.1f}%</div>
+                    <div class="kpi-trend">
+                        <span>Net Income: ${net_income:,.0f}</span>
+                    </div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-title">AR Outstanding</div>
+                    <div class="kpi-value">${total_ar:,.0f}</div>
+                    <div class="kpi-trend">
+                        <span class="trend-down">Overdue: ${overdue_ar:,.0f}</span>
+                    </div>
+                </div>
+                
+                <div class="kpi-card">
+                    <div class="kpi-title">Budget Variance</div>
+                    <div class="kpi-value">${sum(v['variance'] for v in variances):,.0f}</div>
+                    <div class="kpi-trend">
+                        <span>{'Favorable' if sum(v['variance'] for v in variances) < 0 else 'Unfavorable'}</span>
+                    </div>
                 </div>
             </div>
             
             <!-- Charts -->
             <div class="chart-grid">
+                <!-- Revenue vs Expense Chart -->
                 <div class="chart-card">
-                    <h3>Revenue vs Expenses</h3>
-                    <canvas id="revExpChart" style="height: 300px;"></canvas>
+                    <div class="chart-title">📊 Revenue vs Expenses</div>
+                    <div class="chart-container">
+                        <canvas id="revenueExpenseChart"></canvas>
+                    </div>
                 </div>
+                
+                <!-- Budget Variance Chart -->
                 <div class="chart-card">
-                    <h3>AR Aging</h3>
-                    <canvas id="arAgingChart" style="height: 300px;"></canvas>
+                    <div class="chart-title">📈 Budget Variance by Category</div>
+                    <div class="chart-container">
+                        <canvas id="varianceChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- AR Aging Chart -->
+                <div class="chart-card">
+                    <div class="chart-title">📅 AR Aging Analysis</div>
+                    <div class="chart-container">
+                        <canvas id="arAgingChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Top Expenses Chart -->
+                <div class="chart-card">
+                    <div class="chart-title">🔥 Top 5 Expenses</div>
+                    <div class="chart-container">
+                        <canvas id="topExpensesChart"></canvas>
+                    </div>
                 </div>
             </div>
             
-            <!-- Navigation to Email -->
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="/reports/email/send-test?fiscal_period={fiscal_period}" class="btn btn-email">
-                    📧 Send Test Email
-                </a>
-                <a href="/reports/email/status" class="btn" style="background: #9C27B0;">
-                    📧 Check Email Status
-                </a>
+            <!-- Financial Statements -->
+            <div class="financial-grid">
+                <!-- Income Statement -->
+                <div class="financial-card">
+                    <div class="chart-title">📋 Income Statement</div>
+                    <table class="financial-table">
+                        <tr>
+                            <th>Account</th>
+                            <th class="amount">Amount</th>
+                        </tr>
+                        <tr>
+                            <td><strong>Revenue</strong></td>
+                            <td class="amount">${type_totals['Revenue']:,.0f}</td>
+                        </tr>
+        """
+        
+        # Add top 5 revenue accounts
+        for acc in revenue_accounts[:5]:
+            html_content += f"""
+                        <tr>
+                            <td style="padding-left: 20px;">{acc['code']} - {acc['name'][:30]}</td>
+                            <td class="amount">${acc['balance']:,.0f}</td>
+                        </tr>
+            """
+        
+        html_content += f"""
+                        <tr>
+                            <td><strong>Total Expenses</strong></td>
+                            <td class="amount">${type_totals['Expense']:,.0f}</td>
+                        </tr>
+        """
+        
+        # Add top 5 expense accounts
+        for acc in expense_accounts[:5]:
+            html_content += f"""
+                        <tr>
+                            <td style="padding-left: 20px;">{acc['code']} - {acc['name'][:30]}</td>
+                            <td class="amount">${acc['balance']:,.0f}</td>
+                        </tr>
+            """
+        
+        html_content += f"""
+                        <tr class="total-row">
+                            <td><strong>Net Income</strong></td>
+                            <td class="amount"><strong>${net_income:,.0f}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Budget Variance Table -->
+                <div class="financial-card">
+                    <div class="chart-title">📊 Budget Variance Analysis</div>
+                    <table class="financial-table">
+                        <tr>
+                            <th>Category</th>
+                            <th class="amount">Budget</th>
+                            <th class="amount">Actual</th>
+                            <th class="amount">Variance</th>
+                        </tr>
+        """
+        
+        for var in variances[:8]:
+            variance_class = 'variance-favorable' if var['variance'] < 0 else 'variance-unfavorable'
+            html_content += f"""
+                        <tr>
+                            <td>{var['category']}</td>
+                            <td class="amount">${var['budget']:,.0f}</td>
+                            <td class="amount">${var['actual']:,.0f}</td>
+                            <td class="amount {variance_class}">${var['variance']:,.0f} ({var['variance_pct']:.1f}%)</td>
+                        </tr>
+            """
+        
+        html_content += f"""
+                    </table>
+                </div>
+                
+                <!-- AR Aging Table -->
+                <div class="financial-card">
+                    <div class="chart-title">📅 Accounts Receivable Aging</div>
+                    <table class="financial-table">
+                        <tr>
+                            <th>Aging Bucket</th>
+                            <th class="amount">Amount</th>
+                            <th class="amount">% of Total</th>
+                        </tr>
+        """
+        
+        for bucket, amount in aging_buckets.items():
+            percentage = (amount / total_ar * 100) if total_ar > 0 else 0
+            badge_class = 'badge-success' if bucket == '0-30 Days' else 'badge-warning' if bucket in ['31-60 Days', '61-90 Days'] else 'badge-danger'
+            html_content += f"""
+                        <tr>
+                            <td><span class="badge {badge_class}">{bucket}</span></td>
+                            <td class="amount">${amount:,.0f}</td>
+                            <td class="amount">{percentage:.1f}%</td>
+                        </tr>
+            """
+        
+        html_content += f"""
+                        <tr class="total-row">
+                            <td><strong>Total AR</strong></td>
+                            <td class="amount"><strong>${total_ar:,.0f}</strong></td>
+                            <td class="amount"><strong>100%</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <!-- Balance Sheet Summary -->
+                <div class="financial-card">
+                    <div class="chart-title">⚖️ Balance Sheet Summary</div>
+                    <table class="financial-table">
+                        <tr>
+                            <th>Category</th>
+                            <th class="amount">Amount</th>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Assets</strong></td>
+                            <td class="amount">${type_totals['Asset']:,.0f}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding-left: 20px;">Cash & AR</td>
+                            <td class="amount">${type_totals['Asset'] * 0.6:,.0f}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Liabilities</strong></td>
+                            <td class="amount">${type_totals['Liability']:,.0f}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Equity</strong></td>
+                            <td class="amount">${type_totals['Equity']:,.0f}</td>
+                        </tr>
+                        <tr class="total-row">
+                            <td><strong>Liabilities + Equity</strong></td>
+                            <td class="amount"><strong>${type_totals['Liability'] + type_totals['Equity']:,.0f}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Navigation -->
+            <div class="footer">
+                <a href="/dashboard">← Approval Dashboard</a>
+                <a href="/cfo/report">📊 JSON Report</a>
+                <a href="/docs">📚 API Docs</a>
+                <p style="margin-top: 20px;">© 2026 Finance Month-End Close AI Agent v2.0.0</p>
             </div>
             
             <script>
-                // Revenue vs Expenses Chart
-                new Chart(document.getElementById('revExpChart'), {{
+                // Revenue vs Expense Chart
+                const revExpCtx = document.getElementById('revenueExpenseChart').getContext('2d');
+                new Chart(revExpCtx, {{
                     type: 'doughnut',
                     data: {{
                         labels: ['Revenue', 'Expenses', 'Net Income'],
                         datasets: [{{
-                            data: [{type_totals.get('Revenue', 0)}, 
-                                   {type_totals.get('Expense', 0)}, 
-                                   {abs(net_income)}],
-                            backgroundColor: ['#4CAF50', '#f44336', '#2196F3']
+                            data: [{type_totals['Revenue']}, {type_totals['Expense']}, {abs(net_income)}],
+                            backgroundColor: ['#4CAF50', '#f44336', '#2196F3'],
+                            borderWidth: 0
                         }}]
+                    }},
+                    options: {{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {{
+                            legend: {{ position: 'bottom' }}
+                        }},
+                        cutout: '60%'
+                    }}
+                }});
+                
+                // Budget Variance Chart
+                const varianceCtx = document.getElementById('varianceChart').getContext('2d');
+                new Chart(varianceCtx, {{
+                    type: 'bar',
+                    data: {{
+                        labels: {str([v['category'][:15] for v in variances[:6]])},
+                        datasets: [{{
+                            label: 'Variance ($)',
+                            data: {str([v['variance'] for v in variances[:6]])},
+                            backgroundColor: {str(['#4CAF50' if v['variance'] < 0 else '#f44336' for v in variances[:6]])},
+                            borderRadius: 5
+                        }}]
+                    }},
+                    options: {{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {{
+                            legend: {{ display: false }}
+                        }},
+                        scales: {{
+                            y: {{
+                                beginAtZero: true,
+                                ticks: {{
+                                    callback: function(value) {{
+                                        return '$' + value;
+                                    }}
+                                }}
+                            }}
+                        }}
                     }}
                 }});
                 
                 // AR Aging Chart
-                new Chart(document.getElementById('arAgingChart'), {{
+                const arCtx = document.getElementById('arAgingChart').getContext('2d');
+                new Chart(arCtx, {{
                     type: 'pie',
                     data: {{
-                        labels: {list(aging_buckets.keys())},
+                        labels: {str(list(aging_buckets.keys()))},
                         datasets: [{{
-                            data: {list(aging_buckets.values())},
-                            backgroundColor: ['#4CAF50', '#FF9800', '#f44336', '#9C27B0']
+                            data: {str(list(aging_buckets.values()))},
+                            backgroundColor: ['#4CAF50', '#FF9800', '#f44336', '#9C27B0'],
+                            borderWidth: 0
                         }}]
+                    }},
+                    options: {{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {{
+                            legend: {{ position: 'bottom' }}
+                        }}
+                    }}
+                }});
+                
+                // Top Expenses Chart
+                const topExpCtx = document.getElementById('topExpensesChart').getContext('2d');
+                new Chart(topExpCtx, {{
+                    type: 'bar',
+                    data: {{
+                        labels: {str([f"{e['code']}" for e in expense_accounts[:5]])},
+                        datasets: [{{
+                            label: 'Amount ($)',
+                            data: {str([e['balance'] for e in expense_accounts[:5]])},
+                            backgroundColor: '#FF9800',
+                            borderRadius: 5
+                        }}]
+                    }},
+                    options: {{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {{
+                            legend: {{ display: false }}
+                        }},
+                        scales: {{
+                            x: {{
+                                ticks: {{
+                                    callback: function(value) {{
+                                        return '$' + value;
+                                    }}
+                                }}
+                            }}
+                        }}
                     }}
                 }});
             </script>
@@ -7576,4 +7572,3 @@ if __name__ == "__main__":
     print(f"🔍 Health Check: http://localhost:8000/health")
     print("="*60 + "\n")
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
-
