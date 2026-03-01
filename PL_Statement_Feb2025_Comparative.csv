@@ -1,0 +1,40 @@
+Account_Code,Account_Name,Account_Type,Category,Feb_2025_Actual,Feb_2026_Actual,Variance_Amount,Variance_Percent,Status
+4000,Product Sales Revenue,Revenue,Operating Revenue,26500000.00,29865684.74,3365684.74,12.7%,Favorable
+4010,Service Revenue,Revenue,Operating Revenue,5600000.00,6339650.50,739650.50,13.2%,Favorable
+4020,Subscription Revenue,Revenue,Operating Revenue,3100000.00,3492642.58,392642.58,12.7%,Favorable
+4100,Interest Income,Revenue,Non-Operating Revenue,540000.00,616333.56,76333.56,14.1%,Favorable
+4200,FX Gain,Revenue,Non-Operating Revenue,200000.00,225865.04,25865.04,12.9%,Favorable
+TOTAL_REVENUE,Total Revenue,Revenue,Total,35940000.00,40540176.42,4600176.42,12.8%,Favorable
+5000,Salaries and Wages,Expense,Personnel,980000.00,1110732.19,130732.19,13.3%,Unfavorable
+5010,Employee Benefits,Expense,Personnel,900000.00,1019737.24,119737.24,13.3%,Unfavorable
+5020,Contractor Fees,Expense,Personnel,820000.00,924312.86,104312.86,12.7%,Unfavorable
+5100,Office Rent,Expense,Facilities,770000.00,868729.19,98729.19,12.8%,Unfavorable
+5110,Utilities,Expense,Facilities,810000.00,914299.66,104299.66,12.9%,Unfavorable
+5120,Office Supplies,Expense,Facilities,915000.00,1030030.90,115030.90,12.6%,Unfavorable
+5200,Software Licenses,Expense,IT,980000.00,1107364.55,127364.55,13.0%,Unfavorable
+5210,Cloud Services,Expense,IT,1200000.00,1354642.51,154642.51,12.9%,Unfavorable
+5220,IT Support,Expense,IT,850000.00,958460.94,108460.94,12.8%,Unfavorable
+5300,Professional Services,Expense,External,850000.00,958056.17,108056.17,12.7%,Unfavorable
+5310,Legal Fees,Expense,External,1215000.00,1371577.63,156577.63,12.9%,Unfavorable
+5320,Audit Fees,Expense,External,1190000.00,1340571.27,150571.27,12.7%,Unfavorable
+5400,Travel,Expense,T&E,905000.00,1021794.25,116794.25,12.9%,Unfavorable
+5410,Accommodation,Expense,T&E,995000.00,1122559.57,127559.57,12.8%,Unfavorable
+5420,Meals and Entertainment,Expense,T&E,1080000.00,1221692.84,141692.84,13.1%,Unfavorable
+5500,Marketing,Expense,Sales,1235000.00,1391033.95,156033.95,12.6%,Unfavorable
+5510,Advertising,Expense,Sales,1095000.00,1237476.07,142476.07,13.0%,Unfavorable
+5520,Events,Expense,Sales,975000.00,1098494.59,123494.59,12.7%,Unfavorable
+5600,Telecommunications,Expense,Operations,1055000.00,1188371.93,133371.93,12.6%,Unfavorable
+5610,Postage and Courier,Expense,Operations,820000.00,924546.02,104546.02,12.7%,Unfavorable
+5620,Insurance,Expense,Operations,1160000.00,1310206.50,150206.50,12.9%,Unfavorable
+5700,Training,Expense,Development,940000.00,1060256.02,120256.02,12.8%,Unfavorable
+5710,Recruitment,Expense,Development,1160000.00,1310481.05,150481.05,13.0%,Unfavorable
+5800,Depreciation,Expense,Non-Cash,1180000.00,1330907.62,150907.62,12.8%,Unfavorable
+5810,Amortization,Expense,Non-Cash,785000.00,884697.36,99697.36,12.7%,Unfavorable
+5900,Bank Charges,Expense,Finance,1140000.00,1285755.28,145755.28,12.8%,Unfavorable
+5910,Interest Expense,Expense,Finance,855000.00,966892.39,111892.39,13.1%,Unfavorable
+5920,FX Loss,Expense,Finance,1025000.00,1157387.93,132387.93,12.9%,Unfavorable
+TOTAL_EXPENSES,Total Expenses,Expense,Total,27890000.00,31471068.48,3581068.48,12.8%,Unfavorable
+NET_INCOME,Net Income,Net Income,Total,8050000.00,9069107.94,1019107.94,12.7%,Favorable
+PROFIT_MARGIN,Profit Margin,Ratio,Total,22.4%,22.4%,0.0%,0.0%,Neutral
+EBITDA,EBITDA,Metric,Total,10015000.00,11284713.18,1269713.18,12.7%,Favorable
+EBITDA_MARGIN,EBITDA Margin,Ratio,Total,27.9%,27.8%,-0.1%,-0.4%,Neutral
