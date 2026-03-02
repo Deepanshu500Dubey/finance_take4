@@ -55,7 +55,7 @@ app.add_middleware(
 )
 
 # Base URL for dashboard links
-APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:8000")
+APP_BASE_URL = os.getenv("APP_BASE_URL")
 
 # ============================================================================
 # DATA MODELS (Enhanced with Approval Tracking)
@@ -4692,3 +4692,4 @@ if __name__ == "__main__":
     print(f"🔍 Health Check: http://localhost:8000/health")
     print("="*60 + "\n")
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+
